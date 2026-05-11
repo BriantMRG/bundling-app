@@ -1,0 +1,65 @@
+{
+  "name": "bundling-app",
+  "version": "1.0.0",
+  "description": "Bundling label management app",
+  "author": "Briant",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "webpack --mode development && electron .",
+    "build": "webpack --mode production",
+    "dist": "npm run build && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "electron-updater": "^6.8.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.2",
+    "@babel/preset-react": "^7.28.5",
+    "babel-loader": "^10.1.1",
+    "css-loader": "^7.1.2",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "electron-rebuild": "^3.2.9",
+    "html-webpack-plugin": "^5.6.7",
+    "style-loader": "^4.0.0",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^7.0.2"
+  },
+  "build": {
+    "appId": "com.bundling.app",
+    "productName": "Bundling App",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "src/db/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "node_modules/better-sqlite3",
+        "to": "better-sqlite3",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+    "provider": "github",
+    "owner": "BriantMRG",
+    "repo": "bundling-app"
+  }
+  }
+}
