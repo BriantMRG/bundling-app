@@ -48,10 +48,11 @@ export default function PrintPreview() {
     const labels = toShow.flatMap(bundle =>
       patterns.map(pattern => ({
         pattern,
-        color:      bundle.color,
-        size:       bundle.sizeText,
-        quantity:   bundle.quantity,
+        color:        bundle.color,
+        size:         bundle.sizeText,
+        quantity:     bundle.quantity,
         bundleNumber: bundle.bundleNumber,
+        styleNumber:  style.styleNumber,
       }))
     );
 
@@ -65,21 +66,23 @@ export default function PrintPreview() {
 
     const labelsHtml = filteredData.map(item => `
       <div style="
-        width: ${labelWidth}%;
-        height: ${labelHeight}vh;
+        width: calc(${100 / labelsPerRow}% - 4px);
+        min-height: 80px;
         box-sizing: border-box;
         border: 1px solid #000;
-        padding: 8px;
+        padding: 6px 8px;
         display: inline-block;
         vertical-align: top;
         font-size: ${fontSize}px;
         font-family: Helvetica, sans-serif;
+        overflow: hidden;
       ">
-        <div>${item.pattern}</div>
-        <div>${item.color}</div>
-        <div>${item.size}</div>
-        <div>${item.quantity}</div>
+        <div>Pattern: ${item.pattern}</div>
+        <div>Color: ${item.color}</div>
+        <div>Size: ${item.size}</div>
+        <div>Qty: ${item.quantity}</div>
         <div>Bundle#: ${item.bundleNumber}</div>
+        <div>Style#: ${item.styleNumber}</div>
       </div>
     `).join('');
 
@@ -89,7 +92,9 @@ export default function PrintPreview() {
         <head>
           <title>Print Labels</title>
           <style>
-            body { margin: 0; padding: 0; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { margin: 0; padding: 0; font-size: 0; }
+            @page { margin: 0.5cm; }
             @media print {
               body { margin: 0; }
             }
@@ -179,11 +184,12 @@ export default function PrintPreview() {
               fontSize: fontSize,
               background: 'white',
             }}>
-              <div><strong>{item.pattern}</strong></div>
-              <div>{item.color}</div>
-              <div>{item.size}</div>
-              <div>Qty: {item.quantity}</div>
-              <div>Bundle#: {item.bundleNumber}</div>
+            <div><strong>Pattern: {item.pattern}</strong></div>
+            <div>Color: {item.color}</div>
+            <div>Size: {item.size}</div>
+            <div>Qty: {item.quantity}</div>
+            <div>Bundle#: {item.bundleNumber}</div>
+            <div>Style#: {item.styleNumber}</div>
             </div>
           ))}
         </div>

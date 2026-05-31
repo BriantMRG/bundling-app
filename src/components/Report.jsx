@@ -1,98 +1,144 @@
 import React, { useState, useEffect } from 'react';
 
 export default function Report() {
-  const [styles, setStyles]   = useState([]);
-  const [bundles, setBundles] = useState([]);
-  const [summary, setSummary] = useState([]);
+  const [styles, setStyles]         = useState([]);
+  const [bundles, setBundles]       = useState([]);
+  const [selectedStyle, setSelectedStyle] = useState('');
+  const [styleData, setStyleData]   = useState(null);
+  const [filteredBundles, setFilteredBundles] = useState([]);
+  const [checked, setChecked]       = useState({});
+  const [date, setDate]             = useState(new Date().toLocaleDateString());
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadStyles(); }, []);
 
-  async function loadData() {
-    const [s, b] = await Promise.all([
-      window.api.getStyles(),
-      window.api.getBundles(),
-    ]);
-    setStyles(s);
-    setBundles(b);
-    buildSummary(s, b);
+  async function loadStyles() {
+    const data = await window.api.getStyles();
+    setStyles(data);
   }
 
-  function buildSummary(styleList, bundleList) {
-    const map = {};
-
-    for (const bundle of bundleList) {
-      const style = styleList.find(s => s.id === bundle.styleId);
-      const styleNumber = style ? style.styleNumber : '?';
-      const key = `${styleNumber}||${bundle.color}||${bundle.sizeText}`;
-
-      if (!map[key]) {
-        map[key] = {
-          styleNumber,
-          color:      bundle.color,
-          size:       bundle.sizeText,
-          totalQty:   0,
-          bundleCount: 0,
-        };
-      }
-      map[key].totalQty   += bundle.quantity;
-      map[key].bundleCount += 1;
+  async function handleStyleChange(styleId) {
+    setSelectedStyle(styleId);
+    setChecked({});
+    if (!styleId) {
+      setStyleData(null);
+      setFilteredBundles([]);
+      return;
     }
-
-    setSummary(Object.values(map));
+    const style = styles.find(s => s.id === parseInt(styleId));
+    setStyleData(style);
+    const data = await window.api.getBundlesByStyle(parseInt(styleId));
+    setFilteredBundles(data);
   }
+
+  function toggleCheck(bundleId, pattern) {
+    const key = `${bundleId}-${pattern}`;
+    setChecked(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function isChecked(bundleId, pattern) {
+    return !!checked[`${bundleId}-${pattern}`];
+  }
+
+  // Build size summary
+  function getSizeSummary() {
+    const map = {};
+    for (const b of filteredBundles) {
+      if (!map[b.sizeText]) map[b.sizeText] = 0;
+      map[b.sizeText] += b.quantity;
+    }
+    return map;
+  }
+
+  const patterns = styleData
+    ? styleData.pattern.split(', ').filter(p => p.length > 0)
+    : [];
+
+  const sizeSummary = getSizeSummary();
+  const grandTotal  = filteredBundles.reduce((sum, b) => sum + b.quantity, 0);
 
   function handlePrint() {
     const printWindow = window.open('', '_blank');
 
-    const rows = summary.map((row, i) => `
-      <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f9f9f9'}">
-        <td>${row.styleNumber}</td>
-        <td>${row.color}</td>
-        <td>${row.size}</td>
-        <td>${row.bundleCount}</td>
-        <td>${row.totalQty}</td>
-      </tr>
-    `).join('');
+    const sizeHeaders = Object.keys(sizeSummary).map(s =>
+      `<th style="border:1px solid #000;padding:4px 8px;">${s}</th>`
+    ).join('');
 
-    const grandTotal = summary.reduce((sum, r) => sum + r.totalQty, 0);
-    const totalBundles = summary.reduce((sum, r) => sum + r.bundleCount, 0);
+    const sizeValues = Object.values(sizeSummary).map(v =>
+      `<td style="border:1px solid #000;padding:4px 8px;text-align:center;">${v}</td>`
+    ).join('');
+
+    const patternHeaders = patterns.map(p =>
+      `<th style="border:1px solid #000;padding:4px 6px;font-size:11px;">${p}</th>`
+    ).join('');
+
+    const bundleRows = filteredBundles.map(bundle => {
+      const patternCells = patterns.map(p => {
+        const tick = isChecked(bundle.id, p) ? '✓' : '';
+        return `<td style="border:1px solid #000;padding:4px 6px;text-align:center;">${tick}</td>`;
+      }).join('');
+      return `
+        <tr>
+          <td style="border:1px solid #000;padding:4px 8px;">${bundle.bundleNumber}</td>
+          <td style="border:1px solid #000;padding:4px 8px;">${bundle.color}</td>
+          <td style="border:1px solid #000;padding:4px 8px;text-align:center;">${bundle.sizeText}</td>
+          <td style="border:1px solid #000;padding:4px 8px;text-align:center;">${bundle.quantity}</td>
+          ${patternCells}
+        </tr>
+      `;
+    }).join('');
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Bundle Report</title>
+          <title>Traffic Sheet</title>
           <style>
-            body { font-family: Helvetica, sans-serif; padding: 24px; color: #333; }
-            h1 { font-size: 20px; margin-bottom: 4px; }
-            p { font-size: 13px; color: #666; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; font-size: 14px; }
-            th { background: #2c2c2c; color: white; padding: 10px 12px; text-align: left; }
-            td { padding: 8px 12px; border-bottom: 1px solid #eee; }
-            tfoot td { font-weight: bold; background: #f0f0f0; padding: 10px 12px; }
+            body { font-family: Arial, sans-serif; padding: 16px; font-size: 12px; }
+            h2 { margin-bottom: 8px; }
+            table { border-collapse: collapse; width: 100%; }
+            th { background: #f0f0f0; }
           </style>
         </head>
         <body onload="window.print(); window.close();">
-          <h1>Bundle Summary Report</h1>
-          <p>Generated: ${new Date().toLocaleString()}</p>
+          <h2>Traffic Sheet Control</h2>
+          <table style="margin-bottom:12px;border:none;">
+            <tr>
+              <td style="padding:2px 8px 2px 0;border:none;"><strong>Date:</strong> ${date}</td>
+              <td style="padding:2px 8px;border:none;"><strong>Style#:</strong> ${styleData?.styleNumber ?? ''}</td>
+              <td style="padding:2px 8px;border:none;"><strong>Description:</strong> ${styleData?.description ?? ''}</td>
+            </tr>
+          </table>
+
+          <!-- Size summary -->
+          <table style="margin-bottom:16px;">
+            <thead>
+              <tr>
+                ${sizeHeaders}
+                <th style="border:1px solid #000;padding:4px 8px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                ${sizeValues}
+                <td style="border:1px solid #000;padding:4px 8px;text-align:center;font-weight:bold;">${grandTotal}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Bundle table -->
           <table>
             <thead>
               <tr>
-                <th>Style#</th>
-                <th>Color</th>
-                <th>Size</th>
-                <th>No. of Bundles</th>
-                <th>Total Quantity</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Bun#</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Colour</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Size</th>
+                <th style="border:1px solid #000;padding:4px 8px;">Qty</th>
+                ${patternHeaders}
               </tr>
             </thead>
-            <tbody>${rows}</tbody>
-            <tfoot>
-              <tr>
-                <td colspan="3">Grand Total</td>
-                <td>${totalBundles}</td>
-                <td>${grandTotal}</td>
-              </tr>
-            </tfoot>
+            <tbody>
+              ${bundleRows}
+            </tbody>
           </table>
         </body>
       </html>
@@ -100,50 +146,116 @@ export default function Report() {
     printWindow.document.close();
   }
 
-  const grandTotal   = summary.reduce((sum, r) => sum + r.totalQty, 0);
-  const totalBundles = summary.reduce((sum, r) => sum + r.bundleCount, 0);
-
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2>Bundle Summary Report</h2>
-        <button className="btn btn-primary" onClick={handlePrint} disabled={summary.length === 0}>
-          Print Report
-        </button>
+        <h2>Traffic Sheet</h2>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div>
+            <label>Date</label>
+            <input
+              type="text"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              style={{ width: 140 }}
+            />
+          </div>
+          <button
+            className="btn btn-primary"
+            onClick={handlePrint}
+            disabled={!selectedStyle || filteredBundles.length === 0}
+            style={{ marginTop: 18 }}
+          >
+            Print Report
+          </button>
+        </div>
       </div>
 
-      {summary.length === 0 ? (
-        <p style={{ color: '#888' }}>No bundle data available.</p>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 20 }}>
+        <div style={{ flex: 1 }}>
+          <label>Style</label>
+          <select value={selectedStyle} onChange={e => handleStyleChange(e.target.value)}>
+            <option value="">-- Select Style --</option>
+            {styles.map(s => (
+              <option key={s.id} value={s.id}>Style# {s.styleNumber}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {styleData && (
+        <div style={{ marginBottom: 16, fontSize: 13, color: '#555' }}>
+          <strong>Description:</strong> {styleData.description || '—'}
+        </div>
+      )}
+
+      {/* Size summary */}
+      {filteredBundles.length > 0 && (
+        <table style={{ borderCollapse: 'collapse', marginBottom: 20, fontSize: 13 }}>
           <thead>
             <tr style={{ background: '#2c2c2c', color: 'white' }}>
-              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Style#</th>
-              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Color</th>
-              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Size</th>
-              <th style={{ padding: '10px 12px', textAlign: 'left' }}>No. of Bundles</th>
-              <th style={{ padding: '10px 12px', textAlign: 'left' }}>Total Quantity</th>
+              {Object.keys(sizeSummary).map(s => (
+                <th key={s} style={{ padding: '6px 16px', border: '1px solid #444' }}>{s}</th>
+              ))}
+              <th style={{ padding: '6px 16px', border: '1px solid #444' }}>Total</th>
             </tr>
           </thead>
           <tbody>
-            {summary.map((row, i) => (
-              <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#f9f9f9', borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '8px 12px' }}>{row.styleNumber}</td>
-                <td style={{ padding: '8px 12px' }}>{row.color}</td>
-                <td style={{ padding: '8px 12px' }}>{row.size}</td>
-                <td style={{ padding: '8px 12px' }}>{row.bundleCount}</td>
-                <td style={{ padding: '8px 12px' }}>{row.totalQty}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr style={{ background: '#f0f0f0', fontWeight: 'bold' }}>
-              <td style={{ padding: '10px 12px' }} colSpan={3}>Grand Total</td>
-              <td style={{ padding: '10px 12px' }}>{totalBundles}</td>
-              <td style={{ padding: '10px 12px' }}>{grandTotal}</td>
+            <tr>
+              {Object.values(sizeSummary).map((v, i) => (
+                <td key={i} style={{ padding: '6px 16px', border: '1px solid #ccc', textAlign: 'center' }}>{v}</td>
+              ))}
+              <td style={{ padding: '6px 16px', border: '1px solid #ccc', textAlign: 'center', fontWeight: 'bold' }}>{grandTotal}</td>
             </tr>
-          </tfoot>
+          </tbody>
         </table>
+      )}
+
+      {/* Bundle table */}
+      {filteredBundles.length === 0 && selectedStyle && (
+        <p style={{ color: '#888' }}>No bundles found for this style.</p>
+      )}
+
+      {filteredBundles.length === 0 && !selectedStyle && (
+        <p style={{ color: '#888' }}>Select a style to view the traffic sheet.</p>
+      )}
+
+      {filteredBundles.length > 0 && (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
+            <thead>
+              <tr style={{ background: '#2c2c2c', color: 'white' }}>
+                <th style={{ padding: '8px 12px', border: '1px solid #444', textAlign: 'left' }}>Bun#</th>
+                <th style={{ padding: '8px 12px', border: '1px solid #444', textAlign: 'left' }}>Colour</th>
+                <th style={{ padding: '8px 12px', border: '1px solid #444', textAlign: 'left' }}>Size</th>
+                <th style={{ padding: '8px 12px', border: '1px solid #444', textAlign: 'left' }}>Qty</th>
+                {patterns.map(p => (
+                  <th key={p} style={{ padding: '8px 8px', border: '1px solid #444', textAlign: 'center', fontSize: 12 }}>{p}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBundles.map((bundle, i) => (
+                <tr key={bundle.id} style={{ background: i % 2 === 0 ? 'white' : '#f9f9f9' }}>
+                  <td style={{ padding: '6px 12px', border: '1px solid #ddd' }}>{bundle.bundleNumber}</td>
+                  <td style={{ padding: '6px 12px', border: '1px solid #ddd' }}>{bundle.color}</td>
+                  <td style={{ padding: '6px 12px', border: '1px solid #ddd', textAlign: 'center' }}>{bundle.sizeText}</td>
+                  <td style={{ padding: '6px 12px', border: '1px solid #ddd', textAlign: 'center' }}>{bundle.quantity}</td>
+                  {patterns.map(p => (
+                    <td key={p} style={{ padding: '6px 8px', border: '1px solid #ddd', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked(bundle.id, p)}
+                        onChange={() => toggleCheck(bundle.id, p)}
+                        style={{ width: 16, height: 16, cursor: 'pointer' }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 {
   "name": "bundling-app",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Bundling label management app",
   "author": "Briant",
   "main": "electron/main.js",
@@ -57,9 +57,9 @@
       "allowToChangeInstallationDirectory": true
     },
     "publish": {
-    "provider": "github",
-    "owner": "BriantMRG",
-    "repo": "bundling-app"
-  }
+      "provider": "github",
+      "owner": "BriantMRG",
+      "repo": "bundling-app"
+    }
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StyleEntry from './components/StyleEntry';
 import StyleView from './components/StyleView';
 import BundleEntry from './components/BundleEntry';
@@ -13,7 +13,7 @@ const TABS = [
   { id: 'bundleEntry', label: 'Bundle Entry' },
   { id: 'bundleView',  label: 'Bundle View' },
   { id: 'generator',   label: 'Bundle Generator' },
-  { id: 'report',      label: 'Report' },
+  { id: 'report',      label: 'Traffic Sheet' },
   { id: 'print',       label: 'Print Preview' },
 ];
 
