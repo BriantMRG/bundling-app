@@ -1,6 +1,6 @@
 {
   "name": "bundling-app",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Bundling label management app",
   "author": "Briant",
   "main": "electron/main.js",
