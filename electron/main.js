@@ -1,4 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const db = require('../src/db/database');
 
@@ -14,6 +15,26 @@ function createWindow() {
   });
 
   win.loadFile(path.join(__dirname, '../dist/index.html'));
+
+  // Check for updates after window loads
+  win.once('ready-to-show', () => {
+    autoUpdater.checkForUpdatesAndNotify();
+  });
+
+  // Update available — ask user
+  autoUpdater.on('update-available', () => {
+    win.webContents.send('update-available');
+  });
+
+  // Update downloaded — ask user to restart
+  autoUpdater.on('update-downloaded', () => {
+    win.webContents.send('update-downloaded');
+  });
+
+  // Listen for user's decision
+  ipcMain.on('install-update', () => {
+    autoUpdater.quitAndInstall();
+  });
 }
 
 app.whenReady().then(createWindow);
