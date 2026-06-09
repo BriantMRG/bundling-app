@@ -82,60 +82,75 @@ export default function BundleView() {
     return <p style={{ color: '#888' }}>No bundles available.</p>;
   }
 
+  async function handleDeleteAll() {
+    if (!window.confirm('Are you sure you want to delete ALL bundles?')) return;
+    for (const bundle of bundles) {
+      await window.api.deleteBundle(bundle.id);
+    }
+    showSnackbar('All bundles deleted');
+    loadAll();
+  }
   return (
     <div>
-      <h2 style={{ marginBottom: 20 }}>Bundle View</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2>Bundle View</h2>
+        <button className="btn btn-danger" onClick={handleDeleteAll}>Delete All</button>
+      </div>
 
-      {bundles.map(bundle => (
-        <div className="list-item" key={bundle.id}>
-          {editing === bundle.id ? (
-            <div style={{ flex: 1 }}>
-              <label>Bundle#</label>
-              <input
-                type="number"
-                value={bundleNumber}
-                onChange={e => setBundleNumber(e.target.value)}
-              />
-              <label>Color</label>
-              <input
-                type="text"
-                value={color}
-                onChange={e => setColor(e.target.value)}
-              />
-              <label>Size</label>
-              <input
-                type="text"
-                value={sizeText}
-                onChange={e => setSizeText(e.target.value)}
-              />
-              <label>Quantity</label>
-              <input
-                type="number"
-                value={quantity}
-                onChange={e => setQuantity(e.target.value)}
-              />
-              <div style={{ marginTop: 8 }}>
-                <button className="btn btn-primary" onClick={() => saveEdit(bundle)}>Save</button>
-                <button className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
+      {bundles.length === 0 ? (
+        <p style={{ color: '#888' }}>No bundles available.</p>
+      ) : (
+        bundles.map(bundle => (
+          <div className="list-item" key={bundle.id}>
+            {editing === bundle.id ? (
+              <div style={{ flex: 1 }}>
+                <label>Bundle#</label>
+                <input
+                  type="number"
+                  value={bundleNumber}
+                  onChange={e => setBundleNumber(e.target.value)}
+                />
+                <label>Color</label>
+                <input
+                  type="text"
+                  value={color}
+                  onChange={e => setColor(e.target.value)}
+                />
+                <label>Size</label>
+                <input
+                  type="text"
+                  value={sizeText}
+                  onChange={e => setSizeText(e.target.value)}
+                />
+                <label>Quantity</label>
+                <input
+                  type="number"
+                  value={quantity}
+                  onChange={e => setQuantity(e.target.value)}
+                />
+                <div style={{ marginTop: 8 }}>
+                  <button className="btn btn-primary" onClick={() => saveEdit(bundle)}>Save</button>
+                  <button className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <>
-              <div>
-                <div className="list-item-title">Bundle# {bundle.bundleNumber}</div>
-                <div className="list-item-sub">Style#: {getStyleNumber(bundle.styleId)}</div>
-                <div className="list-item-sub">Color: {bundle.color}</div>
-                <div className="list-item-sub">Size: {bundle.sizeText}</div>
-                <div className="list-item-sub">Quantity: {bundle.quantity}</div>
-              </div>
-              <div>
-                <button className="btn btn-secondary" onClick={() => startEdit(bundle)}>Edit</button>
-                <button className="btn btn-danger" onClick={() => handleDelete(bundle.id)}>Delete</button>
-              </div>
-            </>
-          )}
-        </div>
-      ))}
+            ) : (
+              <>
+                <div>
+                  <div className="list-item-title">Bundle# {bundle.bundleNumber}</div>
+                  <div className="list-item-sub">Style#: {getStyleNumber(bundle.styleId)}</div>
+                  <div className="list-item-sub">Color: {bundle.color}</div>
+                  <div className="list-item-sub">Size: {bundle.sizeText}</div>
+                  <div className="list-item-sub">Quantity: {bundle.quantity}</div>
+                </div>
+                <div>
+                  <button className="btn btn-secondary" onClick={() => startEdit(bundle)}>Edit</button>
+                  <button className="btn btn-danger" onClick={() => handleDelete(bundle.id)}>Delete</button>
+                </div>
+              </>
+            )}
+          </div>
+        ))
+      )}
     </div>
   );
 }

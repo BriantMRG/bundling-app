@@ -61,7 +61,7 @@ export default function StyleEntry({
         placeholder="e.g. 1001"
       />
 
-      <label>Pattern</label>
+      <label>Part</label>
       <input
         type="text"
         value={pattern}
@@ -77,7 +77,7 @@ export default function StyleEntry({
         type="text"
         value={description}
         onChange={e => setDescription(e.target.value)}
-        placeholder="Optional description"
+        placeholder="e.g Navy Overalls"
       />
 
       <div style={{ marginTop: 8 }}>

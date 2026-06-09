@@ -76,9 +76,21 @@ export default function StyleView() {
     return <p style={{ color: '#888' }}>No styles available.</p>;
   }
 
-  return (
+  async function handleDeleteAll() {
+    if (!window.confirm('Are you sure you want to delete ALL styles?')) return;
+    for (const style of styles) {
+      await window.api.deleteStyle(style.id);
+    }
+    showSnackbar('All styles deleted');
+    loadStyles();
+  }
+
+    return (
     <div>
-      <h2 style={{ marginBottom: 20 }}>Style View</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2>Style View</h2>
+        <button className="btn btn-danger" onClick={handleDeleteAll}>Delete All</button>
+      </div>
 
       {styles.map(style => (
         <div className="list-item" key={style.id}>
@@ -90,7 +102,7 @@ export default function StyleView() {
                 value={styleNumber}
                 onChange={e => setStyleNumber(e.target.value)}
               />
-              <label>Pattern</label>
+              <label>Part</label>
               <input
                 type="text"
                 value={pattern}
@@ -111,7 +123,7 @@ export default function StyleView() {
             <>
               <div>
                 <div className="list-item-title">Style# {style.styleNumber}</div>
-                <div className="list-item-sub">Pattern: {style.pattern}</div>
+                <div className="list-item-sub">Part: {style.pattern}</div>
                 <div className="list-item-sub">Description: {style.description}</div>
               </div>
               <div>
@@ -123,5 +135,5 @@ export default function StyleView() {
         </div>
       ))}
     </div>
-  );
+  );  
 }

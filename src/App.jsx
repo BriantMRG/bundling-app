@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import StyleEntry from './components/StyleEntry';
 import StyleView from './components/StyleView';
-import BundleEntry from './components/BundleEntry';
 import BundleView from './components/BundleView';
 import PrintPreview from './components/PrintPreview';
 import BundleGenerator from './components/BundleGenerator';
@@ -10,9 +9,8 @@ import Report from './components/Report';
 const TABS = [
   { id: 'styleEntry',  label: 'Style Entry' },
   { id: 'styleView',   label: 'Style View' },
-  { id: 'bundleEntry', label: 'Bundle Entry' },
-  { id: 'bundleView',  label: 'Bundle View' },
   { id: 'generator',   label: 'Bundle Generator' },
+  { id: 'bundleView',  label: 'Bundle View' },
   { id: 'report',      label: 'Traffic Sheet' },
   { id: 'print',       label: 'Print Preview' },
 ];
@@ -67,18 +65,6 @@ export default function App() {
         );
       case 'styleView':
         return <StyleView />;
-      case 'bundleEntry':
-        return (
-          <BundleEntry
-            selectedStyle={beSelectedStyle} setSelectedStyle={setBeSelectedStyle}
-            bundleNumber={beBundleNumber}   setBundleNumber={setBeBundleNumber}
-            color={beColor}                 setColor={setBeColor}
-            sizeText={beSizeText}           setSizeText={setBeSizeText}
-            quantity={beQuantity}           setQuantity={setBeQuantity}
-          />
-        );
-      case 'bundleView':
-        return <BundleView />;
       case 'generator':
         return (
           <BundleGenerator
@@ -91,6 +77,9 @@ export default function App() {
             preview={bgPreview}             setPreview={setBgPreview}
           />
         );
+      case 'bundleView':
+        return <BundleView />;
+     
       case 'report':
         return <Report />;
       case 'print':

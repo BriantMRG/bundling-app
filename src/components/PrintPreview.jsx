@@ -53,6 +53,7 @@ export default function PrintPreview() {
         quantity:     bundle.quantity,
         bundleNumber: bundle.bundleNumber,
         styleNumber:  style.styleNumber,
+        description:  style.description,
       }))
     );
 
@@ -77,12 +78,11 @@ export default function PrintPreview() {
         font-family: Helvetica, sans-serif;
         overflow: hidden;
       ">
-        <div>Pattern: ${item.pattern}</div>
+        <div style="font-size:${fontSize + 4}px;font-weight:bold;">Style#: ${item.styleNumber} &nbsp;&nbsp; ${item.description ? item.description : ''}</div>
+        <div>Bundle#: ${item.bundleNumber}</div>
         <div>Color: ${item.color}</div>
         <div>Size: ${item.size}</div>
-        <div>Qty: ${item.quantity}</div>
-        <div>Bundle#: ${item.bundleNumber}</div>
-        <div>Style#: ${item.styleNumber}</div>
+        <div>Part: ${item.pattern}</div>
       </div>
     `).join('');
 
@@ -184,12 +184,11 @@ export default function PrintPreview() {
               fontSize: fontSize,
               background: 'white',
             }}>
-            <div><strong>Pattern: {item.pattern}</strong></div>
+            <div style={{ fontSize: fontSize + 4, fontWeight: 'bold' }}>Style#: {item.styleNumber} {item.description}</div>
+            <div>Bundle#: {item.bundleNumber}</div>
             <div>Color: {item.color}</div>
             <div>Size: {item.size}</div>
-            <div>Qty: {item.quantity}</div>
-            <div>Bundle#: {item.bundleNumber}</div>
-            <div>Style#: {item.styleNumber}</div>
+            <div>Part: {item.pattern}</div>
             </div>
           ))}
         </div>
