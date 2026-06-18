@@ -4,7 +4,7 @@ export default function PrintPreview() {
   const [styles, setStyles]           = useState([]);
   const [bundles, setBundles]         = useState([]);
   const [selectedStyle, setSelectedStyle] = useState('');
-  const [selectedBundle, setSelectedBundle] = useState('');
+  const [selectedBundles, setSelectedBundles] = useState([]);
   const [filteredData, setFilteredData]   = useState([]);
   const [labelsPerRow, setLabelsPerRow]   = useState(3);
   const [rowsPerPage, setRowsPerPage]     = useState(3);
@@ -19,33 +19,39 @@ export default function PrintPreview() {
 
   async function handleStyleChange(styleId) {
     setSelectedStyle(styleId);
-    setSelectedBundle('');
+    setSelectedBundles([]);
+    setFilteredData([]);
     if (!styleId) {
       setBundles([]);
-      setFilteredData([]);
       return;
     }
     const data = await window.api.getBundlesByStyle(parseInt(styleId));
     setBundles(data);
-    generateLabels(data, '', styleId);
   }
 
-  function handleBundleChange(bundleId) {
-    setSelectedBundle(bundleId);
-    generateLabels(bundles, bundleId, selectedStyle);
+  function toggleBundle(bundleId) {
+    setSelectedBundles(prev =>
+      prev.includes(bundleId)
+        ? prev.filter(id => id !== bundleId)
+        : [...prev, bundleId]
+    );
   }
 
-  function generateLabels(bundleList, bundleId, styleId) {
+  function selectAll() {
+    setSelectedBundles(bundles.map(b => b.id));
+  }
+
+  function deselectAll() {
+    setSelectedBundles([]);
+  }
+
+  function generateLabels(bundleList, styleId) {
     const style = styles.find(s => s.id === parseInt(styleId));
     if (!style) { setFilteredData([]); return; }
 
-    const toShow = bundleId
-      ? bundleList.filter(b => b.id === parseInt(bundleId))
-      : bundleList;
-
     const patterns = style.pattern.split(', ');
 
-    const labels = toShow.flatMap(bundle =>
+    const labels = bundleList.flatMap(bundle =>
       patterns.map(pattern => ({
         pattern,
         color:        bundle.color,
@@ -60,10 +66,20 @@ export default function PrintPreview() {
     setFilteredData(labels);
   }
 
+  function handlePreview() {
+    if (selectedBundles.length === 0) {
+      const el = document.getElementById('snackbar');
+      el.textContent = 'Please select at least one bundle';
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3000);
+      return;
+    }
+    const toShow = bundles.filter(b => selectedBundles.includes(b.id));
+    generateLabels(toShow, selectedStyle);
+  }
+
   function handlePrint() {
     const printWindow = window.open('', '_blank');
-    const labelWidth  = 100 / labelsPerRow;
-    const labelHeight = 100 / rowsPerPage;
 
     const labelsHtml = filteredData.map(item => `
       <div style="
@@ -82,6 +98,7 @@ export default function PrintPreview() {
         <div>Bundle#: ${item.bundleNumber}</div>
         <div>Color: ${item.color}</div>
         <div>Size: ${item.size}</div>
+        <div>Qty: ${item.quantity}</div>
         <div>Part: ${item.pattern}</div>
       </div>
     `).join('');
@@ -115,30 +132,54 @@ export default function PrintPreview() {
     <div>
       <h2 style={{ marginBottom: 20 }}>Print Preview</h2>
 
+      {/* Style selector */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 200 }}>
           <label>Style</label>
           <select value={selectedStyle} onChange={e => handleStyleChange(e.target.value)}>
             <option value="">-- Select Style --</option>
             {styles.map(s => (
-              <option key={s.id} value={s.id}>Style# {s.styleNumber}</option>
+              <option key={s.id} value={s.id}>Style# {s.styleNumber} {s.description ? `— ${s.description}` : ''}</option>
             ))}
           </select>
         </div>
-
-        {bundles.length > 0 && (
-          <div style={{ flex: 1, minWidth: 200 }}>
-            <label>Bundle (optional)</label>
-            <select value={selectedBundle} onChange={e => handleBundleChange(e.target.value)}>
-              <option value="">-- All Bundles --</option>
-              {bundles.map(b => (
-                <option key={b.id} value={b.id}>Bundle# {b.bundleNumber}</option>
-              ))}
-            </select>
-          </div>
-        )}
       </div>
 
+      {/* Bundle selection */}
+      {bundles.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+            <label style={{ fontWeight: 600 }}>Select Bundles</label>
+            <button className="btn btn-secondary" onClick={selectAll} style={{ padding: '4px 10px', fontSize: 12 }}>Select All</button>
+            <button className="btn btn-secondary" onClick={deselectAll} style={{ padding: '4px 10px', fontSize: 12 }}>Deselect All</button>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+            gap: 8,
+            maxHeight: 200,
+            overflowY: 'auto',
+            border: '1px solid #eee',
+            borderRadius: 6,
+            padding: 10,
+            background: 'white',
+          }}>
+            {bundles.map(b => (
+              <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={selectedBundles.includes(b.id)}
+                  onChange={() => toggleBundle(b.id)}
+                  style={{ width: 16, height: 16, margin: 0 }}
+                />
+                Bundle# {b.bundleNumber} ({b.color}, {b.sizeText})
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Print settings */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
           <label>Labels Per Row</label>
@@ -160,14 +201,22 @@ export default function PrintPreview() {
         </div>
       </div>
 
-      <button
-        className="btn btn-primary"
-        onClick={handlePrint}
-        disabled={filteredData.length === 0}
-        style={{ marginBottom: 20 }}
-      >
-        Print Labels
-      </button>
+      <div style={{ marginBottom: 20, display: 'flex', gap: 8 }}>
+        <button
+          className="btn btn-secondary"
+          onClick={handlePreview}
+          disabled={selectedBundles.length === 0}
+        >
+          Preview
+        </button>
+        <button
+          className="btn btn-primary"
+          onClick={handlePrint}
+          disabled={filteredData.length === 0}
+        >
+          Print Labels
+        </button>
+      </div>
 
       {/* Preview Grid */}
       {filteredData.length > 0 && (
@@ -184,17 +233,22 @@ export default function PrintPreview() {
               fontSize: fontSize,
               background: 'white',
             }}>
-            <div style={{ fontSize: fontSize + 4, fontWeight: 'bold' }}>Style#: {item.styleNumber} {item.description}</div>
-            <div>Bundle#: {item.bundleNumber}</div>
-            <div>Color: {item.color}</div>
-            <div>Size: {item.size}</div>
-            <div>Part: {item.pattern}</div>
+              <div style={{ fontSize: fontSize + 4, fontWeight: 'bold' }}>Style#: {item.styleNumber} {item.description}</div>
+              <div>Bundle#: {item.bundleNumber}</div>
+              <div>Color: {item.color}</div>
+              <div>Size: {item.size}</div>
+              <div>Qty: {item.quantity}</div>
+              <div>Part: {item.pattern}</div>
             </div>
           ))}
         </div>
       )}
 
-      {filteredData.length === 0 && selectedStyle && (
+      {filteredData.length === 0 && selectedStyle && selectedBundles.length > 0 && (
+        <p style={{ color: '#888' }}>Click Preview to see labels.</p>
+      )}
+
+      {selectedStyle && bundles.length === 0 && (
         <p style={{ color: '#888' }}>No bundles found for this style.</p>
       )}
     </div>
